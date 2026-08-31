@@ -107,7 +107,16 @@ function runCurl(args) {
     child.on("error", reject);
     child.on("close", (code) => {
       if (code !== 0) {
-        reject(new Error(stderr.trim() || `${CURL} exited with code ${code}`));
+        const detail = stderr.trim();
+        if (code === 5) {
+          reject(
+            new Error(
+              "Could not resolve proxy host. Use http://USER:PASS@HOST:PORT (not HOST:PORT:USER:PASS)."
+            )
+          );
+          return;
+        }
+        reject(new Error(detail || `${CURL} exited with code ${code}`));
         return;
       }
       resolve(stdout);
@@ -115,23 +124,42 @@ function runCurl(args) {
   });
 }
 
+function buildProxyUrl(host, port, user, pass) {
+  if (user) {
+    return `http://${encodeURIComponent(user)}:${encodeURIComponent(pass || "")}@${host}:${port}`;
+  }
+  return `http://${host}:${port}`;
+}
+
+function normalizeProxyUrl(raw) {
+  const value = String(raw || "").trim().replace(/^['"]|['"]$/g, "");
+  if (!value) return "";
+  if (
+    /^(https?|socks5h?):\/\/[^/@]+@[^/@]+:\d+\/?$/i.test(value)
+  ) {
+    return value.replace(/\/$/, "");
+  }
+  const stripped = value.replace(/^(https?|socks5h?):\/\//i, "");
+  const parts = stripped.split(":");
+  if (parts.length === 4 && /^\d+$/.test(parts[1])) {
+    const [host, port, user, pass] = parts;
+    return buildProxyUrl(host, port, user, pass);
+  }
+  return value;
+}
+
 function getProxyUrl() {
-  if (process.env.PROXY_URL) return process.env.PROXY_URL.trim();
+  if (process.env.PROXY_URL) return normalizeProxyUrl(process.env.PROXY_URL);
   const host = process.env.PROXY_HOST;
   const port = process.env.PROXY_PORT;
   if (!host || !port) return "";
-  const user = process.env.PROXY_USER || "";
-  const pass = process.env.PROXY_PASS || "";
-  if (user) {
-    return `http://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}`;
-  }
-  return `http://${host}:${port}`;
+  return buildProxyUrl(host, port, process.env.PROXY_USER, process.env.PROXY_PASS);
 }
 
 async function fetchHtml(url) {
   const proxy = getProxyUrl();
   const args = [
-    "-sL",
+    "-sSL",
     "--compressed",
     "-A",
     UA,
