@@ -1,0 +1,12 @@
+{
+  "pollSeconds": 15,
+  "language": "xx",
+  "order": "recent",
+  "category": "it-programming",
+  "query": "",
+  "skills": "",
+  "keywords": [],
+  "maxPages": 3,
+  "seedPages": 6,
+  "maxAgeHours": 24
+}

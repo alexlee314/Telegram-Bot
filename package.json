@@ -1,0 +1,14 @@
+{
+  "name": "jobalertbot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Watch Workana for new jobs and alert immediately",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "once": "node src/index.js --once"
+  }
+}
