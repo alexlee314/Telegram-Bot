@@ -115,8 +115,22 @@ function runCurl(args) {
   });
 }
 
+function getProxyUrl() {
+  if (process.env.PROXY_URL) return process.env.PROXY_URL.trim();
+  const host = process.env.PROXY_HOST;
+  const port = process.env.PROXY_PORT;
+  if (!host || !port) return "";
+  const user = process.env.PROXY_USER || "";
+  const pass = process.env.PROXY_PASS || "";
+  if (user) {
+    return `http://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}`;
+  }
+  return `http://${host}:${port}`;
+}
+
 async function fetchHtml(url) {
-  const html = await runCurl([
+  const proxy = getProxyUrl();
+  const args = [
     "-sL",
     "--compressed",
     "-A",
@@ -128,9 +142,11 @@ async function fetchHtml(url) {
     "-b",
     "appcookie[user_locale]=en_US",
     "--max-time",
-    "30",
-    url,
-  ]);
+    "45",
+  ];
+  if (proxy) args.push("-x", proxy);
+  args.push(url);
+  const html = await runCurl(args);
   if (html.includes("Just a moment...") || html.includes("cf-mitigated")) {
     throw new Error("Workana blocked the request (Cloudflare challenge)");
   }

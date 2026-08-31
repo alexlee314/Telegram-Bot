@@ -35,6 +35,10 @@ function loadConfig() {
     maxAgeHours: Number(raw.maxAgeHours) || 3,
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
     telegramChatId: process.env.TELEGRAM_CHAT_ID || "",
+    proxyEnabled: Boolean(
+      process.env.PROXY_URL ||
+        (process.env.PROXY_HOST && process.env.PROXY_PORT)
+    ),
   };
 }
 

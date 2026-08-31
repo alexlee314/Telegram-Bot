@@ -81,10 +81,17 @@ async function main() {
   } else {
     stamp("Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env to enable Telegram alerts.");
   }
+  if (config.proxyEnabled) {
+    stamp("Proxy is enabled for Workana requests.");
+  }
 
   let first = seen.size === 0;
-  await poll(config, seen, first);
-  first = false;
+  try {
+    await poll(config, seen, first);
+    first = false;
+  } catch (err) {
+    stamp(`Check failed: ${err.message}. Retrying...`);
+  }
   if (once) return;
 
   let busy = false;
@@ -92,7 +99,8 @@ async function main() {
     if (busy) return;
     busy = true;
     try {
-      await poll(config, seen, false);
+      await poll(config, seen, first);
+      first = false;
     } catch (err) {
       stamp(`Check failed: ${err.message}. Retrying...`);
     } finally {
@@ -105,5 +113,5 @@ async function main() {
 
 main().catch((err) => {
   console.error(err);
-  process.exit(1);
+  if (!process.env.PORT) process.exit(1);
 });
